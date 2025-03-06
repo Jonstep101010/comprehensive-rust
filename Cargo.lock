@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "collatz"
+version = "0.1.0"
+
+[[package]]
 name = "elevator_events"
 version = "0.1.0"
 
