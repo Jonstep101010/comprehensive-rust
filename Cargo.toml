@@ -1,3 +1,3 @@
 [workspace]
 resolver = "2"
-members = ["10.7_elevator_events"]
+members = ["10.7_elevator_events", "5.6_fibonacci"]
