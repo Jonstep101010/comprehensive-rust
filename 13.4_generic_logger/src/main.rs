@@ -27,6 +27,16 @@ struct VerbosityFilter {
 
 // TODO: Implement the `Logger` trait for `VerbosityFilter`.
 
+// @note not trait in this case!
+impl Logger for VerbosityFilter {
+	fn log(&self, verbosity: u8, message: &str) {
+		// verbosity: lower is critical
+		if verbosity <= self.max_verbosity {
+			self.inner.log(verbosity, message)
+		}
+	}
+}
+
 fn main() {
 	let logger = VerbosityFilter {
 		max_verbosity: 3,
