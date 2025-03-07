@@ -2,6 +2,7 @@ use std::io::Read;
 
 // only rotate ascii!
 
+#[allow(dead_code)]
 struct RotDecoder<R: Read> {
 	input: R,
 	rot: u8,

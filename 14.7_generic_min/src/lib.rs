@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 
 // TODO: implement the `min` function used in the tests.
 
+#[allow(dead_code)]
 fn min<T: Ord>(a: T, b: T) -> T {
 	// if a <= b { a } else { b }
 	match a.cmp(&b) {

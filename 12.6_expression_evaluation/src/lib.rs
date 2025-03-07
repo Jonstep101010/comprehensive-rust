@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// An operation to perform on two subexpressions.
 #[derive(Debug)]
 enum Operation {

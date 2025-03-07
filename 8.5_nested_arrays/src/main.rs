@@ -5,6 +5,7 @@
 fn transpose(matrix: [[i32; 3]; 3]) -> [[i32; 3]; 3] {
 	let mut transposed_matrix = [[0; 3]; 3];
 
+	#[allow(clippy::needless_range_loop)]
 	for row in 0..3 {
 		for col in 0..3 {
 			transposed_matrix[col][row] = matrix[row][col];
