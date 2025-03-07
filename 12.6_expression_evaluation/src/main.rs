@@ -12,17 +12,27 @@ enum Operation {
 enum Expression {
 	/// An operation on two subexpressions.
 	Op {
-		op: Operation,
-		left: Box<Expression>,
-		right: Box<Expression>,
+		op: Operation,          // arithmetic operation
+		left: Box<Expression>,  // recursive
+		right: Box<Expression>, // recursive
 	},
 
 	/// A literal value
 	Value(i64),
 }
 
+///
+/// computes the result of recursive tree input
 fn eval(e: Expression) -> i64 {
-	todo!()
+	match e {
+		Expression::Value(res) => res,
+		Expression::Op { op, left, right } => match op {
+			Operation::Add => eval(*left) + eval(*right),
+			Operation::Sub => eval(*left) - eval(*right),
+			Operation::Mul => eval(*left) * eval(*right),
+			Operation::Div => eval(*left) / eval(*right),
+		},
+	}
 }
 
 #[test]
