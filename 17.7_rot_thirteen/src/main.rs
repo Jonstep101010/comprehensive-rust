@@ -1,11 +1,29 @@
 use std::io::Read;
 
+// only rotate ascii!
+
 struct RotDecoder<R: Read> {
 	input: R,
 	rot: u8,
 }
 
 // Implement the `Read` trait for `RotDecoder`.
+
+impl<R: Read> Read for RotDecoder<R> {
+	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+		let size = self.input.read(buf)?; // this is the important part ; /
+		for b in &mut buf[..size] {
+			if b.is_ascii_alphabetic() {
+				let base = if b.is_ascii_uppercase() { 'A' } else { 'a' } as u8;
+				// get char offset (index in alphabet), rotate by requirement
+				let offset = *b - base + self.rot;
+				// reset to new offset at base
+				*b = /* rot_b */ offset % 26 + base;
+			}
+		}
+		Ok(size)
+	}
+}
 
 #[cfg(test)]
 mod test {
