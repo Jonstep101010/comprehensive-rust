@@ -7,4 +7,5 @@ members = [
     "9.6_geometry",
     "10.7_elevator_events",
     "12.6_expression_evaluation",
+    "13.4_generic_logger",
 ]

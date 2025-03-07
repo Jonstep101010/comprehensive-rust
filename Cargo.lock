@@ -19,6 +19,10 @@ name = "fibonacci"
 version = "0.1.0"
 
 [[package]]
+name = "generic_logger"
+version = "0.1.0"
+
+[[package]]
 name = "geometry"
 version = "0.1.0"
 
