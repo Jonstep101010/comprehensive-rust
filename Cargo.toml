@@ -8,4 +8,5 @@ members = [
     "10.7_elevator_events",
     "12.6_expression_evaluation",
     "13.4_generic_logger",
+    "14.7_generic_min",
 ]
