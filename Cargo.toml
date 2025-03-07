@@ -6,4 +6,5 @@ members = [
     "8.5_nested_arrays",
     "9.6_geometry",
     "10.7_elevator_events",
+    "12.6_expression_evaluation",
 ]
