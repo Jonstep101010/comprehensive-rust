@@ -1,17 +1,21 @@
 /*
-The initial version of Counter is hard coded to only work for u32 values. Make the struct and its methods generic over the type of value being tracked, that way Counter can track any type of value.
+The initial version of Counter is hard coded to only work for u32 values.
+Make the struct and its methods generic over the type of value being tracked,
+ that way Counter can track any type of value.
 
 If you finish early, try using the entry method to halve the number of hash lookups required to implement the count method.
 */
 
+use std::cmp::Eq;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 /// Counter counts the number of times each value of type T has been seen.
-struct Counter {
-	values: HashMap<u32, u64>,
+struct Counter<T> {
+	values: HashMap<T, u64>,
 }
 
-impl Counter {
+impl<T: Eq + Hash> Counter<T> {
 	/// Create a new Counter.
 	fn new() -> Self {
 		Counter {
@@ -20,7 +24,7 @@ impl Counter {
 	}
 
 	/// Count an occurrence of the given value.
-	fn count(&mut self, value: u32) {
+	fn count(&mut self, value: T) {
 		if self.values.contains_key(&value) {
 			*self.values.get_mut(&value).unwrap() += 1;
 		} else {
@@ -29,7 +33,7 @@ impl Counter {
 	}
 
 	/// Return the number of times the given value has been seen.
-	fn times_seen(&self, value: u32) -> u64 {
+	fn times_seen(&self, value: T) -> u64 {
 		self.values.get(&value).copied().unwrap_or_default()
 	}
 }
