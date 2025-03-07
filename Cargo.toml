@@ -11,4 +11,5 @@ members = [
     "14.7_generic_min",
     "16.8_counter",
     "17.7_rot_thirteen",
+    "18.4_log_filter",
 ]
