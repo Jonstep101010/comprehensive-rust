@@ -4,6 +4,14 @@ use std::cmp::Ordering;
 
 // TODO: implement the `min` function used in the tests.
 
+fn min<T: Ord>(a: T, b: T) -> T {
+	// if a <= b { a } else { b }
+	match a.cmp(&b) {
+		Ordering::Less | Ordering::Equal => a,
+		Ordering::Greater => b,
+	}
+}
+
 #[test]
 fn integers() {
 	assert_eq!(min(0, 10), 0);
