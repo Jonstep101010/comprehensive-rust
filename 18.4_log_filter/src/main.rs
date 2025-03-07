@@ -16,6 +16,39 @@ impl Logger for StderrLogger {
 	}
 }
 
+/// only send messages passing the filtering predicate to inner
+struct Filter<L, P> {
+	inner: L,
+	predicate: P,
+}
+
+// where
+//	L: Logger,
+//	P: Fn(u8, &str) -> bool,
+
+impl<L, P> Filter<L, P>
+where
+	/* required for call to know type (error[E0282]: type annotations needed) */
+	L: Logger,
+	P: Fn(u8, &str) -> bool,
+{
+	fn new(inner: L, predicate: P) -> Self {
+		Self { inner, predicate }
+	}
+}
+impl<L, P> Logger for Filter<L, P>
+where
+	L: Logger,
+	P: Fn(u8, &str) -> bool,
+{
+	fn log(&self, verbosity: u8, message: &str) {
+		// @note closure requires parenthesis
+		if (self.predicate)(verbosity, message) {
+			self.inner.log(verbosity, message);
+		}
+	}
+}
+
 // TODO: Define and implement `Filter`.
 
 fn main() {
