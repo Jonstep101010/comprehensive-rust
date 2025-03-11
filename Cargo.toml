@@ -13,4 +13,5 @@ members = [
     "17.7_rot_thirteen",
     "18.4_log_filter",
     "20.8_builder_type",
+    "21.4_binary_tree",
 ]
