@@ -42,24 +42,23 @@ impl User {
 	pub fn visit_doctor(&mut self, measurements: Measurements) -> HealthReport {
 		// update height and blood_pressure on user, changes into health report
 		self.visit_count += 1;
-		let preliminary_report = HealthReport {
+		let (old_bp, old_height) = (self.last_blood_pressure, self.height);
+		self.last_blood_pressure = Some(measurements.blood_pressure);
+		self.height = measurements.height;
+		HealthReport {
 			patient_name: &self.name,
 			visit_count: self.visit_count,
-			height_change: (self.height - measurements.height).abs(),
-			blood_pressure_change: if let Some(last_bp) = self.last_blood_pressure {
+			height_change: (old_height - measurements.height).abs(),
+			blood_pressure_change: if let Some((last_systolic, last_diastolic)) = old_bp {
 				let (new_systolic, new_diastolic) = measurements.blood_pressure;
-				let (last_systolic, last_diastolic) = last_bp;
 				Some((
-					(0 - last_systolic as i32 + new_systolic as i32),
-					(0 - last_diastolic as i32 + new_diastolic as i32),
+					(new_systolic as i32 - last_systolic as i32),
+					(new_diastolic as i32 - last_diastolic as i32),
 				))
 			} else {
 				None
 			},
-		};
-		self.height = measurements.height;
-		self.last_blood_pressure = Some(measurements.blood_pressure);
-		preliminary_report
+		}
 	}
 }
 
