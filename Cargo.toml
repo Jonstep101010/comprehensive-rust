@@ -12,4 +12,5 @@ members = [
     "16.8_counter",
     "17.7_rot_thirteen",
     "18.4_log_filter",
+    "20.8_builder_type",
 ]
