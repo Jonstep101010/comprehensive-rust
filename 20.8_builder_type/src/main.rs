@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[derive(Debug)]
 enum Language {
 	Rust,
@@ -25,7 +27,10 @@ impl Package {
 	/// Return a representation of this package as a dependency, for use in
 	/// building other packages.
 	fn as_dependency(&self) -> Dependency {
-		todo!("1")
+		Dependency {
+			name: self.name.clone(),
+			version_expression: self.version.clone(),
+		}
 	}
 }
 
@@ -34,7 +39,14 @@ struct PackageBuilder(Package);
 
 impl PackageBuilder {
 	fn new(name: impl Into<String>) -> Self {
-		todo!("2")
+		// use Self(Package struct init)
+		Self(Package {
+			name: name.into(),
+			version: "0.1".into(),
+			authors: vec![],
+			dependencies: vec![],
+			language: None,
+		})
 	}
 
 	/// Set the package version.
