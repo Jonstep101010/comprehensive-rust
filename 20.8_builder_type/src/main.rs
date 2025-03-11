@@ -57,17 +57,20 @@ impl PackageBuilder {
 
 	/// Set the package authors.
 	fn authors(mut self, authors: Vec<String>) -> Self {
-		todo!("3")
+		self.0.authors = authors;
+		self
 	}
 
 	/// Add an additional dependency.
 	fn dependency(mut self, dependency: Dependency) -> Self {
-		todo!("4")
+		self.0.dependencies.push(dependency);
+		self
 	}
 
 	/// Set the language. If not set, language defaults to None.
 	fn language(mut self, language: Language) -> Self {
-		todo!("5")
+		self.0.language = Some(language);
+		self
 	}
 
 	fn build(self) -> Package {
