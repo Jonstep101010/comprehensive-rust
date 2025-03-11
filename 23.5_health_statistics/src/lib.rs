@@ -38,34 +38,28 @@ impl User {
 		}
 	}
 
+	/// Update a user's statistics based on measurements from a visit to the doctor
 	pub fn visit_doctor(&mut self, measurements: Measurements) -> HealthReport {
 		// update height and blood_pressure on user, changes into health report
-		let height_diff = (self.height - measurements.height).abs();
-		let (new_systolic, new_diastolic) = measurements.blood_pressure;
-		let bp_diff: (i32, i32) = if self.last_blood_pressure.is_some() {
-			let (last_systolic, last_diastolic) = self.last_blood_pressure.unwrap();
-			(
-				(0 - last_systolic as i32 + new_systolic as i32),
-				(0 - last_diastolic as i32 + new_diastolic as i32),
-			)
-		} else {
-			(0, 0)
+		self.visit_count += 1;
+		let preliminary_report = HealthReport {
+			patient_name: &self.name,
+			visit_count: self.visit_count,
+			height_change: (self.height - measurements.height).abs(),
+			blood_pressure_change: if let Some(last_bp) = self.last_blood_pressure {
+				let (new_systolic, new_diastolic) = measurements.blood_pressure;
+				let (last_systolic, last_diastolic) = last_bp;
+				Some((
+					(0 - last_systolic as i32 + new_systolic as i32),
+					(0 - last_diastolic as i32 + new_diastolic as i32),
+				))
+			} else {
+				None
+			},
 		};
 		self.height = measurements.height;
 		self.last_blood_pressure = Some(measurements.blood_pressure);
-		self.visit_count += 1;
-
-		HealthReport {
-			patient_name: &self.name,
-			visit_count: self.visit_count,
-			height_change: height_diff,
-			blood_pressure_change: if bp_diff == (0, 0) {
-				None
-			} else {
-				Some(bp_diff)
-			},
-		}
-		// todo!("Update a user's statistics based on measurements from a visit to the doctor")
+		preliminary_report
 	}
 }
 
