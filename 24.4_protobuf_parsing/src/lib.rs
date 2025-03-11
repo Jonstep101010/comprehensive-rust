@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 // exercise: https://google.github.io/comprehensive-rust/lifetimes/exercise.html
 
 /// A wire type as seen on the wire.
@@ -102,10 +104,32 @@ fn unpack_tag(tag: u64) -> (u64, WireType) {
 fn parse_field(data: &[u8]) -> (Field, &[u8]) {
 	let (tag, remainder) = parse_varint(data);
 	let (field_num, wire_type) = unpack_tag(tag);
+	// Based on the wire type, build a Field, consuming as many bytes as necessary.
 	let (fieldvalue, remainder) = match wire_type {
-		_ => todo!("Based on the wire type, build a Field, consuming as many bytes as necessary."),
+		WireType::Varint => {
+			let (value, remainder) = parse_varint(remainder);
+			(FieldValue::Varint(value), remainder)
+		}
+		WireType::Len => {
+			// adapted from solution
+			let (len_value, remainder) = parse_varint(remainder);
+			let len: usize = len_value.try_into().expect("requires valid usize");
+			assert!(
+				len <= remainder.len(),
+				"unexpected EOF: error handling in prod"
+			);
+			// split bytefield at index
+			let (val, remainder) = remainder.split_at(len);
+			(FieldValue::Len(val), remainder)
+		}
 	};
-	todo!("Return the field, and any un-consumed bytes.")
+	(
+		Field {
+			field_num,
+			value: fieldvalue,
+		},
+		remainder,
+	)
 }
 
 /// Parse a message in the given data, calling `T::add_field` for each field in
@@ -122,13 +146,13 @@ fn parse_message<'a, T: ProtoMessage<'a>>(mut data: &'a [u8]) -> T {
 	result
 }
 
-#[derive(Debug, Default)]
+#[derive(PartialEq, Debug, Default)]
 struct PhoneNumber<'a> {
 	number: &'a str,
 	type_: &'a str,
 }
 
-#[derive(Debug, Default)]
+#[derive(PartialEq, Debug, Default)]
 struct Person<'a> {
 	name: &'a str,
 	id: u64,
@@ -136,6 +160,29 @@ struct Person<'a> {
 }
 
 // TODO: Implement ProtoMessage for Person and PhoneNumber.
+
+// tuple-style indexing on Person
+impl<'a> ProtoMessage<'a> for Person<'a> {
+	fn add_field(&mut self, field: Field<'a>) {
+		match field.field_num {
+			1 => self.name = field.value.as_str(),
+			2 => self.id = field.value.as_u64(),
+			3 => {
+				self.phone.push(parse_message(&field.value.as_bytes()));
+			}
+			_ => todo!("idk"),
+		}
+	}
+}
+impl<'a> ProtoMessage<'a> for PhoneNumber<'a> {
+	fn add_field(&mut self, field: Field<'a>) {
+		match field.field_num {
+			1 => self.number = field.value.as_str(),
+			2 => self.type_ = field.value.as_str(),
+			_ => todo!("idk"),
+		}
+	}
+}
 
 #[test]
 fn test_id() {
