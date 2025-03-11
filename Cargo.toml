@@ -14,4 +14,5 @@ members = [
     "18.4_log_filter",
     "20.8_builder_type",
     "21.4_binary_tree",
+    "23.5_health_statistics",
 ]
