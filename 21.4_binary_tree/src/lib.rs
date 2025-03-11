@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /*
 A binary tree is a tree-type data structure where every node has two children (left and right).
 We will create a tree where each node stores a value.
@@ -20,6 +22,48 @@ struct Node<T: Ord> {
 /// A possibly-empty subtree.
 #[derive(Debug)]
 struct Subtree<T: Ord>(Option<Box<Node<T>>>);
+
+impl<T: Ord> Subtree<T> {
+	pub fn new() -> Self {
+		Self(None)
+	}
+	fn insert(&mut self, val: T) {
+		match &mut self.0 {
+			Some(node) => {
+				// handle order
+				match val.cmp(&node.value) {
+					std::cmp::Ordering::Less => node.left.insert(val),
+					std::cmp::Ordering::Equal => { /* no duplicates! */ }
+					std::cmp::Ordering::Greater => node.right.insert(val),
+				}
+			}
+			None => {
+				self.0 = Some(Box::new(Node {
+					value: val,
+					left: Subtree::new(),
+					right: Subtree::new(),
+				}))
+			}
+		}
+	}
+	fn has(&self, val: &T) -> bool {
+		match &self.0 {
+			Some(node) => match val.cmp(&node.value) {
+				std::cmp::Ordering::Less => node.left.has(val),
+				std::cmp::Ordering::Equal => true, /* there can either be smaller or bigger values, but not missing */
+				std::cmp::Ordering::Greater => node.right.has(val),
+			},
+			None => false,
+		}
+	}
+	fn len(&self) -> usize {
+		if let Some(tree) = &self.0 {
+			1 + tree.left.len() + tree.right.len()
+		} else {
+			0
+		}
+	}
+}
 
 /// A container storing a set of values, using a binary tree.
 ///
