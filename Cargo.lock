@@ -55,5 +55,9 @@ name = "nested_arrays"
 version = "0.1.0"
 
 [[package]]
+name = "protobuf_parsing"
+version = "0.1.0"
+
+[[package]]
 name = "rot_thirteen"
 version = "0.1.0"
