@@ -2,8 +2,19 @@
 /// wrapping around from the end of `values` to the beginning.
 ///
 /// Element `n` of the result is `values[(n+offset)%len] - values[n]`.
+#[allow(unused)]
 fn offset_differences(offset: usize, values: Vec<i32>) -> Vec<i32> {
-	todo!()
+	let mut result = Vec::with_capacity(values.len());
+	for n in 0..values.len() {
+		result.push(
+			values[
+			// circular index: modulo to wrap around when needed
+			(n + offset) % values.len()]
+			// current index
+				- values[n],
+		);
+	}
+	result
 }
 
 #[test]
