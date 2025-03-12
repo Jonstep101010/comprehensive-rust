@@ -16,6 +16,12 @@ fn offset_differences(offset: usize, values: Vec<i32>) -> Vec<i32> {
 		);
 	}
 
+	// loop with collect
+	let map_no_iter_result: Vec<i32> = (0..values.len())
+		.map(|n| values[(n + offset) % values.len()] - values[n])
+		.collect();
+	assert_eq!(loop_result, map_no_iter_result);
+
 	// iterator based implementation: adapted from solution
 	// all zeros are overwritten without wrapping by offset using skip after cycling
 	let iter_result = values
