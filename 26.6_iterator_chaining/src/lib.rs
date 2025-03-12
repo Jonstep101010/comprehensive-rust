@@ -5,26 +5,27 @@
 #[allow(unused)]
 fn offset_differences(offset: usize, values: Vec<i32>) -> Vec<i32> {
 	// basic loop based implementation
-	// let mut result = Vec::with_capacity(values.len());
-	// for n in 0..values.len() {
-	// 	result.push(
-	// 		values[
-	// 		// circular index: modulo to wrap around when needed
-	// 		(n + offset) % values.len()]
-	// 		// current index
-	// 			- values[n],
-	// 	);
-	// }
-	// result
+	let mut loop_result = Vec::with_capacity(values.len());
+	for n in 0..values.len() {
+		loop_result.push(
+			values[
+			// circular index: modulo to wrap around when needed
+			(n + offset) % values.len()]
+			// current index
+				- values[n],
+		);
+	}
 
-	// iterator based implementation
-	let zero_indexing = values.iter();
-	// all zeros as overwritten without wrapping by offset using skip
-	let circular_indexing = values.iter().cycle().skip(offset);
-	zero_indexing
-		.zip(circular_indexing)
-		.map(|(&zero, &circular)| circular - zero)
-		.collect()
+	// iterator based implementation: adapted from solution
+	// all zeros are overwritten without wrapping by offset using skip after cycling
+	let iter_result = values
+		.iter()
+		.zip(values.iter().cycle().skip(offset))
+		.map(|(&zero, &cycled)| cycled - zero)
+		.collect();
+
+	assert_eq!(loop_result, iter_result);
+	iter_result
 }
 
 #[test]
