@@ -17,4 +17,5 @@ members = [
     "23.5_health_statistics",
     "24.4_protobuf_parsing",
     "26.6_iterator_chaining",
+    "27.6_gui_modules",
 ]
