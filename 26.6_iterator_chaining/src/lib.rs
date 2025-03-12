@@ -4,17 +4,27 @@
 /// Element `n` of the result is `values[(n+offset)%len] - values[n]`.
 #[allow(unused)]
 fn offset_differences(offset: usize, values: Vec<i32>) -> Vec<i32> {
-	let mut result = Vec::with_capacity(values.len());
-	for n in 0..values.len() {
-		result.push(
-			values[
-			// circular index: modulo to wrap around when needed
-			(n + offset) % values.len()]
-			// current index
-				- values[n],
-		);
-	}
-	result
+	// basic loop based implementation
+	// let mut result = Vec::with_capacity(values.len());
+	// for n in 0..values.len() {
+	// 	result.push(
+	// 		values[
+	// 		// circular index: modulo to wrap around when needed
+	// 		(n + offset) % values.len()]
+	// 		// current index
+	// 			- values[n],
+	// 	);
+	// }
+	// result
+
+	// iterator based implementation
+	let zero_indexing = values.iter();
+	// all zeros as overwritten without wrapping by offset using skip
+	let circular_indexing = values.iter().cycle().skip(offset);
+	zero_indexing
+		.zip(circular_indexing)
+		.map(|(&zero, &circular)| circular - zero)
+		.collect()
 }
 
 #[test]
