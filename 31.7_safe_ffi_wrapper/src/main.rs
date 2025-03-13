@@ -103,7 +103,15 @@ impl Iterator for DirectoryIterator {
 impl Drop for DirectoryIterator {
 	fn drop(&mut self) {
 		// Call closedir as needed.
-		todo!()
+		match unsafe { crate::ffi::closedir(self.dir) } {
+			0 => { /* success */ }
+			-1 => {
+				eprintln!("closedir failed on: {:?}", self.path)
+			}
+			_ => {
+				unimplemented!("")
+			}
+		}
 	}
 }
 
