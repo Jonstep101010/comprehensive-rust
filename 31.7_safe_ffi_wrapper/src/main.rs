@@ -1,5 +1,5 @@
 // TODO: remove this when you're done with your implementation.
-#![allow(unused_imports, unused_variables, dead_code)]
+#![allow(clippy::upper_case_acronyms)]
 
 mod ffi {
 	use std::os::raw::{c_char, c_int};
@@ -27,7 +27,7 @@ mod ffi {
 	}
 
 	// Layout according to the macOS man page for dir(5).
-	#[cfg(all(target_os = "macos"))]
+	#[cfg(target_os = "macos")]
 	#[repr(C)]
 	pub struct dirent {
 		pub d_fileno: u64,
