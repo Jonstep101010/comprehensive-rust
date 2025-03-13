@@ -21,7 +21,7 @@ impl Widget for Label {
 			.unwrap_or(0)
 	}
 
-	fn draw_into(&self, buffer: &mut dyn std::fmt::Write) {
-		writeln!(buffer, "{}", &self.label).unwrap();
+	fn draw_into(&self, buffer: &mut dyn std::fmt::Write) -> Result<(), std::fmt::Error> {
+		writeln!(buffer, "{}", &self.label)
 	}
 }
