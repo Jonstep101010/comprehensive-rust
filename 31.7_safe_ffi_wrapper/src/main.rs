@@ -70,10 +70,14 @@ impl DirectoryIterator {
 	fn new(path: &str) -> Result<DirectoryIterator, String> {
 		// Call opendir and return a Ok value if that worked,
 		// otherwise return Err with a message.
-		let cstr_path = CString::new(path).expect("valid path from string");
+
+		// let cstr_path_expect = CString::new(path).expect("valid path from string");
+		// more elegant: no panic - provide error in result
+		let cstr_path = CString::new(path).map_err(|err| format!("Invalid path: {err}"))?;
+		// SAFETY: path.as_ptr() cannot be NULL
 		let opendir_ret = unsafe { crate::ffi::opendir(cstr_path.as_ptr()) };
 		if opendir_ret.is_null() {
-			Err("opendir failed".to_string())
+			Err(format!("Could not open {cstr_path:?}"))
 		} else {
 			Ok(Self {
 				path: cstr_path,
@@ -87,12 +91,13 @@ impl Iterator for DirectoryIterator {
 	type Item = OsString;
 	fn next(&mut self) -> Option<OsString> {
 		// Keep calling readdir until we get a NULL pointer back.
+		// SAFETY: self.dir is never NULL.
 		let readdir_ret = unsafe { crate::ffi::readdir(self.dir) };
 		if readdir_ret.is_null() {
-			// Err("end of directory reached or error".to_string())
+			// reached end of directory (we do not handle errors)
 			None
 		} else {
-			// # Safety readdir_ret is not null, d_name shall not be either
+			// SAFETY: readdir_ret is not null, d_name is nul-terminated
 			let dirname = unsafe { CStr::from_ptr((*readdir_ret).d_name.as_ptr()) };
 			let osstr_dirname = OsStr::from_bytes(dirname.to_bytes()).to_os_string();
 			Some(osstr_dirname)
@@ -103,14 +108,9 @@ impl Iterator for DirectoryIterator {
 impl Drop for DirectoryIterator {
 	fn drop(&mut self) {
 		// Call closedir as needed.
-		match unsafe { crate::ffi::closedir(self.dir) } {
-			0 => { /* success */ }
-			-1 => {
-				eprintln!("closedir failed on: {:?}", self.path)
-			}
-			_ => {
-				unimplemented!("")
-			}
+		// SAFETY: self.dir is never NULL
+		if unsafe { crate::ffi::closedir(self.dir) } != 0 {
+			panic!("closedir failed on: {:?}", self.path)
 		}
 	}
 }
