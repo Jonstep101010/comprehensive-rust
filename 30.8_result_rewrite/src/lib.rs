@@ -41,7 +41,7 @@ fn eval(e: Expression) -> Result<i64, DivideByZeroError> {
 		Expression::Op { op, left, right } => {
 			let left = eval(*left)?;
 			let right = eval(*right)?;
-			match op {
+			let more_verbose = match op {
 				Operation::Add => Ok(left + right),
 				Operation::Sub => Ok(left - right),
 				Operation::Mul => Ok(left * right),
@@ -50,10 +50,23 @@ fn eval(e: Expression) -> Result<i64, DivideByZeroError> {
 						Ok(left / right)
 					} else {
 						Err(DivideByZeroError)
-						// panic!("Cannot divide by zero!");
 					}
 				}
-			}
+			};
+			let shorter = Ok(match op {
+				Operation::Add => left + right,
+				Operation::Sub => left - right,
+				Operation::Mul => left * right,
+				Operation::Div => {
+					if right != 0 {
+						left / right
+					} else {
+						return Err(DivideByZeroError);
+					}
+				}
+			});
+			assert_eq!(more_verbose, shorter);
+			more_verbose
 		}
 		Expression::Value(v) => Ok(v),
 	}
