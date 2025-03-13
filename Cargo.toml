@@ -19,4 +19,5 @@ members = [
     "26.6_iterator_chaining",
     "27.6_gui_modules",
     "28.4_luhn_algorithm",
+    "30.8_result_rewrite",
 ]

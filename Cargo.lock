@@ -71,5 +71,9 @@ name = "protobuf_parsing"
 version = "0.1.0"
 
 [[package]]
+name = "result_rewrite"
+version = "0.1.0"
+
+[[package]]
 name = "rot_thirteen"
 version = "0.1.0"
