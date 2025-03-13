@@ -87,7 +87,16 @@ impl Iterator for DirectoryIterator {
 	type Item = OsString;
 	fn next(&mut self) -> Option<OsString> {
 		// Keep calling readdir until we get a NULL pointer back.
-		todo!()
+		let readdir_ret = unsafe { crate::ffi::readdir(self.dir) };
+		if readdir_ret.is_null() {
+			// Err("end of directory reached or error".to_string())
+			None
+		} else {
+			// # Safety readdir_ret is not null, d_name shall not be either
+			let dirname = unsafe { CStr::from_ptr((*readdir_ret).d_name.as_ptr()) };
+			let osstr_dirname = OsStr::from_bytes(dirname.to_bytes()).to_os_string();
+			Some(osstr_dirname)
+		}
 	}
 }
 
