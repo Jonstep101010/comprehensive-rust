@@ -20,4 +20,5 @@ members = [
     "27.6_gui_modules",
     "28.4_luhn_algorithm",
     "30.8_result_rewrite",
+    "31.7_safe_ffi_wrapper",
 ]
