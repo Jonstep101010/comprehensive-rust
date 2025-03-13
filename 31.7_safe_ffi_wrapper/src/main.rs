@@ -70,7 +70,16 @@ impl DirectoryIterator {
 	fn new(path: &str) -> Result<DirectoryIterator, String> {
 		// Call opendir and return a Ok value if that worked,
 		// otherwise return Err with a message.
-		todo!()
+		let cstr_path = CString::new(path).expect("valid path from string");
+		let opendir_ret = unsafe { crate::ffi::opendir(cstr_path.as_ptr()) };
+		if opendir_ret.is_null() {
+			Err("opendir failed".to_string())
+		} else {
+			Ok(Self {
+				path: cstr_path,
+				dir: opendir_ret,
+			})
+		}
 	}
 }
 
