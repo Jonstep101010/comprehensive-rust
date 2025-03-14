@@ -31,6 +31,10 @@ name = "counter"
 version = "0.1.0"
 
 [[package]]
+name = "dining_philosophers"
+version = "0.1.0"
+
+[[package]]
 name = "elevator_events"
 version = "0.1.0"
 
