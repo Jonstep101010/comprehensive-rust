@@ -42,7 +42,7 @@ struct CrawlCommand {
 
 // check a specific url
 fn visit_page(client: &Client, command: &CrawlCommand) -> Result<Vec<Url>, Error> {
-	println!("Checking {:#}", command.url);
+	println!("{:#}", command.url);
 	let response = client.get(command.url.clone()).send()?;
 	if !response.status().is_success() {
 		return Err(Error::BadResponse(response.status().to_string()));
@@ -144,6 +144,8 @@ impl CrawlState {
 			false
 		}
 	}
+	///
+	/// not previously encountered
 	fn mark_visited(&mut self, url: &Url) -> bool {
 		self.visited_sites.insert(url.to_string())
 	}
@@ -158,7 +160,7 @@ fn monitor_workers(
 	result_receiver: mpsc::Receiver<CrawlResult>,
 ) {
 	// initialize crawlstate
-	let crawl_state = CrawlState::new(&start_url);
+	let mut crawl_state = CrawlState::new(&start_url);
 	let initial_crawl_command = CrawlCommand {
 		url: start_url,
 		extract_links: true,
@@ -175,13 +177,17 @@ fn monitor_workers(
 		match crawl_result {
 			Ok(urls) => {
 				for url in urls {
-					// @todo store state of crawler
 					// check if visited, otherwise mark as visited
-					if true
-					/* visited */
-					{
+					if crawl_state.mark_visited(&url) {
 						// determine if we should extract links
+						let extract_links = crawl_state.should_descend_endpoints(&url);
 						// set up CrawlCommand and send
+						command_sender
+							.send(CrawlCommand {
+								extract_links,
+								url: url.clone(),
+							})
+							.unwrap();
 						sites_remaining += 1;
 					}
 				}
@@ -189,7 +195,7 @@ fn monitor_workers(
 			Err((url, err)) => {
 				bad_urls.push(url);
 				eprintln!("crawling error: {:#}", err);
-				// continue;
+				continue;
 			}
 		}
 	}
