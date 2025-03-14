@@ -9,17 +9,19 @@ Thus two chopsticks will only be available when their two nearest neighbors are 
 After an individual philosopher finishes eating, they will put down both chopsticks.
 */
 
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread;
 use std::time::Duration;
 
+// zero-field struct stored in Arc<Mutex>
 struct Chopstick;
 
 struct Philosopher {
 	name: String,
-	// left_chopstick: ...
-	// right_chopstick: ...
-	// thoughts: ...
+	left_chopstick: Arc<Mutex<Chopstick>>,
+	right_chopstick: Arc<Mutex<Chopstick>>,
+	thoughts: mpsc::SyncSender<String>, // could this be Sender instead?
 }
 
 impl Philosopher {
@@ -39,7 +41,11 @@ impl Philosopher {
 static PHILOSOPHERS: &[&str] = &["Socrates", "Hypatia", "Plato", "Aristotle", "Pythagoras"];
 
 fn main() {
-	// Create chopsticks
+	// Create chopsticks: start with left, right is borrowed
+	let chopsticks: VecDeque<_> = PHILOSOPHERS
+		.iter()
+		.map(|_| Arc::new(Mutex::new(Chopstick)))
+		.collect();
 
 	// Create philosophers
 
