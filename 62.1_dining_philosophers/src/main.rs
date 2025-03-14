@@ -77,21 +77,26 @@ fn main() {
 			}
 		})
 		.collect();
-	let mut philo_threads = vec![];
 
 	// run philosopher routine in thread
-	for (id, philosopher) in philosophers.into_iter().enumerate() {
-		philo_threads.push(thread::spawn(move || {
-			// Make each of them think and eat 100 times
-			if id % 2 == 0 {
-				philosopher.think();
-			}
-			for _ in 0..100 {
-				philosopher.eat();
-				philosopher.think();
-			}
-		}));
-	}
+	let philo_threads: Vec<_> = philosophers
+		.into_iter()
+		.enumerate()
+		.map(|(id, philosopher)| {
+			thread::spawn(move || {
+				// Make each of them think and eat 100 times
+				if id % 2 == 0 {
+					// this is not really required:
+					// eat() checks for chopstick availability and we do not use sleep
+					philosopher.think();
+				}
+				for _ in 0..100 {
+					philosopher.eat();
+					philosopher.think();
+				}
+			})
+		})
+		.collect();
 
 	// exercise solution cheats, use other way instead
 	// COPY-START: loop
@@ -106,14 +111,13 @@ fn main() {
 	// COPY-START
 	drop(tx);
 	// Output their thoughts
-	for thought in &rx {
+	for thought in rx {
 		println!("{thought}");
 	}
-	drop(rx);
 	// COPY-END
 
+	// check for errors
 	for thread in philo_threads {
-		let ret = thread.join();
-		ret.unwrap()
+		let _ = thread.join().expect("could not join thread");
 	}
 }
