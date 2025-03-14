@@ -17,6 +17,8 @@ Put an upper limit of 100 pages or so so that you don’t end up being blocked b
 
 use std::{
 	collections::HashSet,
+	fs::OpenOptions,
+	io::Write,
 	sync::{Arc, Mutex, mpsc},
 };
 
@@ -79,7 +81,12 @@ type CrawlResult = Result<Vec<Url>, (Url, Error)>;
 // mpsc: CrawlCommand
 fn main() {
 	let start_url = reqwest::Url::parse("https://www.google.org").unwrap();
-	check_sites(start_url);
+	let args: Vec<String> = std::env::args().collect();
+	let save_file = args.get(1).map(|s| s.as_str());
+	if let Some(file) = save_file {
+		eprintln!("{file} argument provided!")
+	}
+	check_sites(start_url, save_file);
 }
 
 ///
@@ -100,8 +107,7 @@ fn worker_crawl_thread(
 			&crawl_command, /* from command_receiver after recv() */
 		) {
 			Ok(links) => Ok(links),
-			// println!("Links: {links:#?}"),
-			Err(err) => Err((crawl_command.url, err)), // println!("Could not extract links: {err:#}"),
+			Err(err) => Err((crawl_command.url, err)),
 		};
 		result_sender.send(crawl_result).unwrap();
 	}
@@ -149,6 +155,20 @@ impl CrawlState {
 	fn mark_visited(&mut self, url: &Url) -> bool {
 		self.visited_sites.insert(url.to_string())
 	}
+	/// write visited sites to file
+	fn filedump(&self, save_file: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+		if let Some(filename) = save_file {
+			let mut file = OpenOptions::new()
+				.write(true)
+				.create(true)
+				.truncate(true)
+				.open(filename)?;
+			for url in &self.visited_sites {
+				file.write_fmt(format_args!("{}\n", url))?;
+			}
+		}
+		Ok(())
+	}
 }
 
 const NUM_THREADS: usize = 16;
@@ -158,7 +178,8 @@ fn monitor_workers(
 	start_url: Url,
 	command_sender: mpsc::Sender<CrawlCommand>,
 	result_receiver: mpsc::Receiver<CrawlResult>,
-) {
+	save_file: Option<&str>,
+) -> Result<(), Box<(dyn std::error::Error + 'static)>> {
 	// initialize crawlstate
 	let mut crawl_state = CrawlState::new(&start_url);
 	let initial_crawl_command = CrawlCommand {
@@ -199,14 +220,17 @@ fn monitor_workers(
 			}
 		}
 	}
-	println!("Bad URLs: {:#?}", bad_urls);
+	if !bad_urls.is_empty() {
+		eprintln!("Bad URLs: {:#?}", bad_urls);
+	}
+	crawl_state.filedump(save_file)
 }
 
 // sets up infrastructure for supervising/monitoring as well as dispatching workers
-fn check_sites(start_url: Url) {
+fn check_sites(start_url: Url, save_file: Option<&str>) {
 	// from solution: use command_sender, command_receiver, result_sender, result_receiver)
 	let (command_sender, command_receiver) = mpsc::channel::<CrawlCommand>();
 	let (result_sender, result_receiver) = mpsc::channel::<CrawlResult>();
 	spawn_workers(command_receiver, result_sender);
-	monitor_workers(start_url, command_sender, result_receiver);
+	monitor_workers(start_url, command_sender, result_receiver, save_file).unwrap();
 }
