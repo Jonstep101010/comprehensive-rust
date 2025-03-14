@@ -15,6 +15,8 @@ Tasks:
 Put an upper limit of 100 pages or so so that you don’t end up being blocked by the site.
 */
 
+use std::sync::mpsc;
+
 use reqwest::Url;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
@@ -34,6 +36,7 @@ struct CrawlCommand {
 	extract_links: bool,
 }
 
+// check a specific url
 fn visit_page(client: &Client, command: &CrawlCommand) -> Result<Vec<Url>, Error> {
 	println!("Checking {:#}", command.url);
 	let response = client.get(command.url.clone()).send()?;
@@ -66,16 +69,76 @@ fn visit_page(client: &Client, command: &CrawlCommand) -> Result<Vec<Url>, Error
 	}
 	Ok(link_urls)
 }
+// from solution
+type CrawlResult = Result<Vec<Url>, (Url, Error)>;
 
+// mpsc: CrawlCommand
 fn main() {
+	let start_url = reqwest::Url::parse("https://www.google.org").unwrap();
+	check_sites(start_url);
+}
+
+///
+/// runs the loop until no more endpoints remaining
+fn worker_crawl_thread(
+	command_receiver: mpsc::Receiver<CrawlCommand>,
+	result_sender: mpsc::Sender<CrawlResult>,
+) {
 	let client = Client::new();
-	let start_url = Url::parse("https://www.google.org").unwrap();
-	let crawl_command = CrawlCommand {
+	loop {
+		// check endpoints, send result on channel
+		// should have a guard in concurrency?
+		let crawl_command = match command_receiver.recv() {
+			Ok(crawlcommand) => crawlcommand,
+			Err(_) => break,
+		};
+		let crawl_result = match visit_page(
+			&client,
+			&crawl_command, /* from command_receiver after recv() */
+		) {
+			Ok(links) => Ok(links),
+			// println!("Links: {links:#?}"),
+			Err(err) => Err((crawl_command.url, err)), // println!("Could not extract links: {err:#}"),
+		};
+		result_sender.send(crawl_result);
+	}
+}
+
+fn spawn_workers(
+	command_receiver: mpsc::Receiver<CrawlCommand>,
+	result_sender: mpsc::Sender<CrawlResult>,
+) {
+}
+
+const NUM_THREADS: usize = 16;
+///
+/// stores crawlstate, updates visited & bad urls
+fn monitor_workers(
+	start_url: Url,
+	command_sender: mpsc::Sender<CrawlCommand>,
+	result_receiver: mpsc::Receiver<CrawlResult>,
+) {
+	// initialize crawlstate
+	let initial_crawl_command = CrawlCommand {
 		url: start_url,
 		extract_links: true,
 	};
-	match visit_page(&client, &crawl_command) {
-		Ok(links) => println!("Links: {links:#?}"),
-		Err(err) => println!("Could not extract links: {err:#}"),
+	command_sender.send(initial_crawl_command);
+	let mut sites_remaining = 1;
+	let mut bad_urls: Vec<Url> = vec![];
+
+	while sites_remaining > 0 {
+		// receive results
+		// match, append and redispatch or error out
 	}
+	println!("Bad URLs: {:#?}", bad_urls);
+}
+
+// sets up infrastructure for supervising/monitoring as well as dispatching workers
+fn check_sites(start_url: Url) {
+	// from solution: use command_sender, command_receiver, result_sender, result_receiver)
+	let (command_sender, command_receiver) = mpsc::channel::<CrawlCommand>();
+	let (result_sender, result_receiver) = mpsc::channel::<CrawlResult>();
+	spawn_workers(command_receiver, result_sender);
+	monitor_workers(start_url, command_sender, result_receiver);
 }
