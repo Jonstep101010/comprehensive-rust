@@ -15,11 +15,15 @@ Tasks:
 Put an upper limit of 100 pages or so so that you don’t end up being blocked by the site.
 */
 
-use std::sync::mpsc;
+use std::{
+	collections::HashSet,
+	sync::{Arc, Mutex, mpsc},
+};
 
 use reqwest::Url;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
+use std::thread;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -81,14 +85,13 @@ fn main() {
 ///
 /// runs the loop until no more endpoints remaining
 fn worker_crawl_thread(
-	command_receiver: mpsc::Receiver<CrawlCommand>,
+	command_receiver: Arc<Mutex<std::sync::mpsc::Receiver<CrawlCommand>>>,
 	result_sender: mpsc::Sender<CrawlResult>,
 ) {
 	let client = Client::new();
 	loop {
 		// check endpoints, send result on channel
-		// should have a guard in concurrency?
-		let crawl_command = match command_receiver.recv() {
+		let crawl_command = match command_receiver.lock().unwrap().recv() {
 			Ok(crawlcommand) => crawlcommand,
 			Err(_) => break,
 		};
@@ -100,14 +103,50 @@ fn worker_crawl_thread(
 			// println!("Links: {links:#?}"),
 			Err(err) => Err((crawl_command.url, err)), // println!("Could not extract links: {err:#}"),
 		};
-		result_sender.send(crawl_result);
+		result_sender.send(crawl_result).unwrap();
 	}
 }
-
 fn spawn_workers(
 	command_receiver: mpsc::Receiver<CrawlCommand>,
 	result_sender: mpsc::Sender<CrawlResult>,
 ) {
+	// wrap command_receiver in mutex
+	let command_receiver_guarded = Arc::new(Mutex::new(command_receiver));
+	for _ in 0..NUM_THREADS {
+		let command_receiver_guard = command_receiver_guarded.clone();
+		let result_sender = result_sender.clone();
+		thread::spawn(move || {
+			worker_crawl_thread(command_receiver_guard, result_sender);
+		});
+	}
+}
+
+struct CrawlState {
+	domain: String,
+	visited_sites: std::collections::HashSet<String>,
+}
+
+impl CrawlState {
+	fn new(start_url: &Url) -> Self {
+		let mut new = CrawlState {
+			visited_sites: HashSet::new(),
+			domain: start_url.domain().unwrap().to_string(),
+		};
+		new.visited_sites.insert(start_url.to_string());
+		new
+	}
+	///
+	/// is domain, has host, not just IP
+	fn should_descend_endpoints(&self, url: &Url) -> bool {
+		if let Some(url_endpoint) = url.domain() {
+			url_endpoint == self.domain
+		} else {
+			false
+		}
+	}
+	fn mark_visited(&mut self, url: &Url) -> bool {
+		self.visited_sites.insert(url.to_string())
+	}
 }
 
 const NUM_THREADS: usize = 16;
@@ -119,17 +158,40 @@ fn monitor_workers(
 	result_receiver: mpsc::Receiver<CrawlResult>,
 ) {
 	// initialize crawlstate
+	let crawl_state = CrawlState::new(&start_url);
 	let initial_crawl_command = CrawlCommand {
 		url: start_url,
 		extract_links: true,
 	};
-	command_sender.send(initial_crawl_command);
+	command_sender.send(initial_crawl_command).unwrap();
 	let mut sites_remaining = 1;
 	let mut bad_urls: Vec<Url> = vec![];
 
 	while sites_remaining > 0 {
 		// receive results
+		let crawl_result = result_receiver.recv().unwrap();
+		sites_remaining -= 1;
 		// match, append and redispatch or error out
+		match crawl_result {
+			Ok(urls) => {
+				for url in urls {
+					// @todo store state of crawler
+					// check if visited, otherwise mark as visited
+					if true
+					/* visited */
+					{
+						// determine if we should extract links
+						// set up CrawlCommand and send
+						sites_remaining += 1;
+					}
+				}
+			}
+			Err((url, err)) => {
+				bad_urls.push(url);
+				eprintln!("crawling error: {:#}", err);
+				// continue;
+			}
+		}
 	}
 	println!("Bad URLs: {:#?}", bad_urls);
 }
