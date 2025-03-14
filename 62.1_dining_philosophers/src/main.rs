@@ -18,6 +18,7 @@ use std::time::Duration;
 struct Chopstick;
 
 struct Philosopher {
+	id: usize,
 	name: String,
 	left_chopstick: Arc<Mutex<Chopstick>>,
 	right_chopstick: Arc<Mutex<Chopstick>>,
@@ -33,7 +34,16 @@ impl Philosopher {
 
 	fn eat(&self) {
 		// Pick up chopsticks...
-		println!("{} is eating...", &self.name);
+		println!("{} looking for chopsticks...", &self.name);
+		if self.id % 2 == 0 {
+			let _left = self.left_chopstick.lock().unwrap();
+			let _right = self.right_chopstick.lock().unwrap();
+			println!("{} is eating...", &self.name);
+		} else {
+			let _right = self.right_chopstick.lock().unwrap();
+			let _left = self.left_chopstick.lock().unwrap();
+			println!("{} is eating...", &self.name);
+		}
 		thread::sleep(Duration::from_millis(10));
 	}
 }
@@ -41,15 +51,69 @@ impl Philosopher {
 static PHILOSOPHERS: &[&str] = &["Socrates", "Hypatia", "Plato", "Aristotle", "Pythagoras"];
 
 fn main() {
+	let (tx, rx): (mpsc::SyncSender<String>, mpsc::Receiver<String>) = mpsc::sync_channel(10);
 	// Create chopsticks: start with left, right is borrowed
-	let chopsticks: VecDeque<_> = PHILOSOPHERS
+	let initial_chopsticks: VecDeque<_> = PHILOSOPHERS
 		.iter()
 		.map(|_| Arc::new(Mutex::new(Chopstick)))
 		.collect();
 
-	// Create philosophers
+	let zipped_philos_chopsticks = PHILOSOPHERS
+		.iter()
+		.zip(initial_chopsticks.iter().enumerate());
+	// Create philosophers, looping over chopsticks
+	let philosophers: Vec<_> = zipped_philos_chopsticks
+		.map(|(&philo_name, chopstick)| {
+			// create philosopher instance
+			Philosopher {
+				id: chopstick.0,
+				name: philo_name.to_string(),
+				// assign chopsticks
+				left_chopstick: chopstick.1.clone(),
+				right_chopstick: initial_chopsticks[(chopstick.0 + 1) % initial_chopsticks.len()]
+					.clone(),
+				// clone sender for philosophers' thoughts
+				thoughts: tx.clone(),
+			}
+		})
+		.collect();
+	let mut philo_threads = vec![];
 
-	// Make each of them think and eat 100 times
+	// run philosopher routine in thread
+	for (id, philosopher) in philosophers.into_iter().enumerate() {
+		philo_threads.push(thread::spawn(move || {
+			// Make each of them think and eat 100 times
+			if id % 2 == 0 {
+				philosopher.think();
+			}
+			for _ in 0..100 {
+				philosopher.eat();
+				philosopher.think();
+			}
+		}));
+	}
 
+	// exercise solution cheats, use other way instead
+	// COPY-START: loop
+	// To avoid a deadlock, we have to break the symmetry
+	// somewhere. This will swap the chopsticks without deinitializing
+	// either of them.
+	// if i == chopsticks.len() - 1 {
+	// 	std::mem::swap(&mut left_chopstick, &mut right_chopstick);
+	// }
+	// COPY-END: loop
+
+	// COPY-START
+	drop(tx);
 	// Output their thoughts
+	for thought in &rx {
+		println!("{thought}");
+	}
+	drop(rx);
+	// COPY-END
+
+	for thread in philo_threads {
+		let ret = thread.join();
+		ret.unwrap()
+	}
 }
