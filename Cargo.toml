@@ -23,5 +23,5 @@ members = [
     "31.7_safe_ffi_wrapper",
     "62.1_dining_philosophers",
     "62.2_threaded_link_checker",
-    "67.1_dining_philosophers_async",
+    "67.1_dining_philosophers_async", "67.2_chat_async",
 ]
