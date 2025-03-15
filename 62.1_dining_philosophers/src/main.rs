@@ -118,6 +118,6 @@ fn main() {
 
 	// check for errors
 	for thread in philo_threads {
-		let _ = thread.join().expect("could not join thread");
+		thread.join().expect("could not join thread");
 	}
 }

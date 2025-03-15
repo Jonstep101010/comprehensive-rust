@@ -168,7 +168,7 @@ impl<'a> ProtoMessage<'a> for Person<'a> {
 			1 => self.name = field.value.as_str(),
 			2 => self.id = field.value.as_u64(),
 			3 => {
-				self.phone.push(parse_message(&field.value.as_bytes()));
+				self.phone.push(parse_message(field.value.as_bytes()));
 			}
 			_ => todo!("idk"),
 		}
