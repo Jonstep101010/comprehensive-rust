@@ -6,6 +6,7 @@ use tokio::time;
 struct Chopstick;
 
 struct Philosopher {
+	// adapted from previous implementation
 	id: usize,
 	name: String,
 	// tokio Mutex
@@ -77,33 +78,33 @@ async fn main() {
 	// to avoid deadlock
 	drop(tx);
 	// run philosopher routine in thread
-	// this could be a simple for loop (not awaiting handles)
-	// for phil in philosophers {
-	// 	tokio::spawn(async move {
-	// 		for _ in 0..100 {
-	// 			phil.think().await;
-	// 			phil.eat().await;
-	// 		}
-	// 	});
-	// }
-	let handles: Vec<_> = philosophers
-		.into_iter()
-		.map(|phil| {
-			tokio::spawn(async move {
-				for _ in 0..100 {
-					phil.think().await;
-					phil.eat().await;
-				}
-			})
-		})
-		.collect();
+	// see awaiting handles for other implemenation
+	for phil in philosophers {
+		tokio::spawn(async move {
+			for _ in 0..100 {
+				phil.think().await;
+				phil.eat().await;
+			}
+		});
+	}
+	// let handles: Vec<_> = philosophers
+	// 	.into_iter()
+	// 	.map(|phil| {
+	// 		tokio::spawn(async move {
+	// 			for _ in 0..100 {
+	// 				phil.think().await;
+	// 				phil.eat().await;
+	// 			}
+	// 		})
+	// 	})
+	// 	.collect();
 
 	// Output their thoughts
 	while let Some(thought) = rx.recv().await {
 		println!("Here is a thought: {thought}");
 	}
 
-	for handle in handles {
-		let _ = handle.await;
-	}
+	// for handle in handles {
+	// 	let _ = handle.await;
+	// }
 }
