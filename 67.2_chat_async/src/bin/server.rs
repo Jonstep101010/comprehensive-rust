@@ -7,13 +7,14 @@ use tokio::sync::broadcast::{channel, Sender};
 use tokio_websockets::{Message, ServerBuilder, WebSocketStream};
 
 ///
-/// `addr` IP address
+/// `ws_stream` socket for this connection
+/// `addr` IP address of connection source
+/// `bcast_tx` tuple with both sender IP address and message content
 async fn handle_connection(
 	addr: SocketAddr,
 	mut ws_stream: WebSocketStream<TcpStream>,
-	bcast_tx: Sender<String>,
+	bcast_tx: Sender<(SocketAddr, String)>, // Changed to tuple type
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-	// TODO: For a hint, see the description of the task below.
 	// initialize client connection:
 	// send greeting and create broadcast receiving handle
 	ws_stream
@@ -30,14 +31,22 @@ async fn handle_connection(
 					Some(Ok(msg)) => {
 						if let Some(text) = msg.as_text() {
 							println!("From {addr:?}: {text:?}");
-							bcast_tx.send(text.into())?;
+							bcast_tx.send((addr, text.to_string()))?;
 						}
 					}
 				}
 			}
 			// send broadcasts to client
 			broadcast_for_client = bcast_rx.recv() => {
-				ws_stream.send(Message::text(broadcast_for_client?)).await?;
+				match broadcast_for_client {
+					Ok((sender, msg)) => {
+						// Only forward messages from other clients
+						if sender != addr {
+							ws_stream.send(Message::text(msg)).await?;
+						}
+					},
+					Err(e) => return Err(e.into()),
+				}
 			}
 		}
 	}
@@ -45,7 +54,9 @@ async fn handle_connection(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
-	let (bcast_tx, _) = channel(16);
+	// Changed channel type to (SocketAddr, String)
+	// to verify IP: sender != receiver
+	let (bcast_tx, _) = channel::<(SocketAddr, String)>(16);
 
 	let listener = TcpListener::bind("127.0.0.1:2000").await?;
 	println!("listening on port 2000");
