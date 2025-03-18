@@ -24,7 +24,7 @@ async fn main() -> Result<(), tokio_websockets::Error> {
 							println!("From server: {msg:?}");
 						}
 					},
-					Some(Err(err)) => return Err(err.into()),
+					Some(Err(err)) => return Err(err),
 					None => return Ok(()),
 				}
 			}
