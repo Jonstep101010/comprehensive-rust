@@ -6,13 +6,41 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::broadcast::{channel, Sender};
 use tokio_websockets::{Message, ServerBuilder, WebSocketStream};
 
+///
+/// `addr` IP address
 async fn handle_connection(
 	addr: SocketAddr,
 	mut ws_stream: WebSocketStream<TcpStream>,
 	bcast_tx: Sender<String>,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-
 	// TODO: For a hint, see the description of the task below.
+	// initialize client connection:
+	// send greeting and create broadcast receiving handle
+	ws_stream
+		.send(Message::text("Welcome to the broadcast chat"))
+		.await?;
+	let mut bcast_rx = bcast_tx.subscribe();
+	loop {
+		tokio::select! {
+			// recv messages from client
+			received_from_client = ws_stream.next() => {
+				match received_from_client {
+					None => return Ok(()),
+					Some(Err(err)) => return Err(err.into()),
+					Some(Ok(msg)) => {
+						if let Some(text) = msg.as_text() {
+							println!("From {addr:?}: {text:?}");
+							bcast_tx.send(text.into())?;
+						}
+					}
+				}
+			}
+			// send broadcasts to client
+			broadcast_for_client = bcast_rx.recv() => {
+				ws_stream.send(Message::text(broadcast_for_client?)).await?;
+			}
+		}
+	}
 }
 
 #[tokio::main]

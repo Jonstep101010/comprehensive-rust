@@ -14,4 +14,32 @@ async fn main() -> Result<(), tokio_websockets::Error> {
 	let mut stdin = BufReader::new(stdin).lines();
 
 	// TODO: For a hint, see the description of the task below.
+	loop {
+		tokio::select! {
+			incoming = ws_stream.next() => {
+				// destructure Option<Result<Option<String>>>
+				match incoming {
+					Some(Ok(message)) => {
+						if let Some(msg) = message.as_text() {
+							println!("From server: {msg:?}");
+						}
+					},
+					Some(Err(err)) => return Err(err.into()),
+					None => return Ok(()),
+				}
+			}
+			outgoing = stdin.next_line() => {
+				// destructure io::Result<Option<String>>
+				match outgoing {
+					Err(err) =>
+						return Err(err.into()),
+					Ok(None) => return Ok(()),
+					Ok(Some(stdin_input)) => {
+						ws_stream.send(Message::text(stdin_input.to_string())).await?;
+					},
+				}
+
+			}
+		}
+	}
 }
